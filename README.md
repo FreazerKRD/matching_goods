@@ -15,9 +15,13 @@
  App can take two type of query:
  1. /knn - use this for searching 5 nearest goods for input vector of features.
  2. /add - use this to add new goods into DB.
+ 
  Parametres for query:
+ 
  params={"item": vec, "vec_name": vec_name})
+ 
  vec - string with 72 float features, delimiter is ","
+ 
  vec_name - string with the name of new goods
 
  There are dockerfile and docker-compose, so you could run it on your machine easily. 
