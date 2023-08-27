@@ -57,10 +57,10 @@ def start() -> None:
         cb_model = cb.CatBoostClassifier()
         cb_model.load_model(os.path.join(DATA_PATH, "cb_final_model"))
         # Load scaled_vectors and base_index
-        scaled_vectors = pd.read_csv("app/data/scaled_vectors.csv", index_col=0)
-        base_index = np.load('app/data/base_index.npy', allow_pickle='TRUE').item()
+        scaled_vectors = pd.read_csv(os.path.join(DATA_PATH, "scaled_vectors.csv"), index_col=0)
+        base_index = np.load(os.path.join(DATA_PATH, "base_index.npy"), allow_pickle='TRUE').item()
         # Load scaler
-        scaler=load('app/data/scaler.bin')
+        scaler=load(os.path.join(DATA_PATH, "scaler.bin"))
         print("System files loaded successfully")
     except:
         sys.exit("Missing required files")
@@ -107,7 +107,7 @@ def match(item: Union[str, None] = None) -> dict:
     # Horizontal merge of arrays
     cb_features = np.hstack((reshaped_dist, candidate_features, repeated_object))
     
-    # Make predictions on validation chunk data
+    # Make predictions
     cb_preds = cb_model.predict_proba(cb_features)[:,1]
     
     # Set number of candidates and select their indices 
@@ -127,4 +127,4 @@ def match(item: Union[str, None] = None) -> dict:
     return {"status": "OK", "data": candidates_idx.tolist()}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="localhost", port=8031)
+    uvicorn.run(app, host="0.0.0.0", port=8031)
