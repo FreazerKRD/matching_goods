@@ -70,7 +70,7 @@ def main() -> dict:
     return {"status": "OK", "Message": "App working, use /knn or /add query"}
 
 @app.get("/knn")
-def match(item: Union[str, None] = None) -> dict:
+def match_vec(item: Union[str, None] = None) -> dict:
     global idx_l2
     global cb_model
     global scaler
@@ -125,6 +125,28 @@ def match(item: Union[str, None] = None) -> dict:
     del scaled_vec
 
     return {"status": "OK", "data": candidates_idx.tolist()}
+
+@app.get("/add")
+def add_vec(item: Union[str, None] = None, vec_name: Union[str, None] = None) -> None:
+    global idx_l2
+    global cb_model
+    global scaler
+    global scaled_vectors
+    global base_index
+
+    vec = np.array(parse_string(item)).reshape(1, -1)
+
+    # Scale vector
+    scaled_vec = pd.DataFrame(scaler.transform(vec), columns=scaled_vectors.columns)
+    scaled_vec.rename({0 : vec_name}, inplace=True)
+
+    # Clean memory
+    del vec
+
+    # Adding new vector to all variables
+    idx_l2.add(np.ascontiguousarray(scaled_vec.values).astype('float32'))
+    scaled_vectors = pd.concat([scaled_vectors, scaled_vec], axis=0)
+    base_index[len(base_index)] = vec_name
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8031)
