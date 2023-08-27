@@ -7,7 +7,7 @@ import pandas as pd
 import catboost as cb
 from sklearn.preprocessing import StandardScaler
 from config import DATA_PATH
-from faiss import read_index
+from faiss import read_index, write_index
 from fastapi import FastAPI
 from typing import Union
 from joblib import dump, load
@@ -39,6 +39,17 @@ def find_max_indices(arr: np.array, k: int, n: int) -> np.array:
         max_values = np.argpartition(sub_arr, -n)[-n:]
         max_indices = np.vstack((max_indices, max_values))
     return max_indices
+
+@app.on_event("shutdown")
+def shutdown() -> None:
+    global idx_l2
+    global scaled_vectors
+    global base_index
+
+    # Save variables to cache on app exit
+    write_index(idx_l2, os.path.join(DATA_PATH, "idx_l2.index"))
+    np.save(os.path.join(DATA_PATH, "base_index.npy"), base_index)
+    scaled_vectors.to_csv(os.path.join(DATA_PATH, "scaled_vectors.csv"))
 
 @app.on_event("startup")
 def start() -> None:
@@ -134,6 +145,9 @@ def add_vec(item: Union[str, None] = None, vec_name: Union[str, None] = None) ->
     global scaled_vectors
     global base_index
 
+    if item is None or vec_name is None:
+        return {"status": "Fail", "Message": "No data recieved"}
+    
     vec = np.array(parse_string(item)).reshape(1, -1)
 
     # Scale vector
@@ -147,6 +161,8 @@ def add_vec(item: Union[str, None] = None, vec_name: Union[str, None] = None) ->
     idx_l2.add(np.ascontiguousarray(scaled_vec.values).astype('float32'))
     scaled_vectors = pd.concat([scaled_vectors, scaled_vec], axis=0)
     base_index[len(base_index)] = vec_name
+
+    return {"status": "OK", "Message": "New vector successfully added"}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8031)
